@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html" class="back-btn">Back</a>
+    <h1 id="gameTitle">Loading...</h1>
+  </div>
+
+  <div class="frame-wrap">
+    <iframe id="frame" scrolling="no"></iframe>
+  </div>
+
+  <script>
+    const games = [
+      { title: "Minecraft", folder: "minecraft" },
+      { title: "Geometry Dash", folder: "geometry-dash" },
+      { title: "Hollow Knight", folder: "hollow-knight" },
+      { title: "Level Devil", folder: "level-devil" },
+      { title: "Escape road", folder: "escape-road" }
+    ];
+
+    const p = new URLSearchParams(location.search);
+    const f = p.get("folder");
+    const g = games.find(x => x.folder === f);
+
+    const titleEl = document.getElementById("gameTitle");
+    const frameEl = document.getElementById("frame");
+
+    if (g) {
+      titleEl.textContent = g.title;
+      frameEl.src = "games/" + g.folder + "/index.html";
+    } else {
+      titleEl.textContent = "Game not found";
+    }
+  </script>
+</body>
+</html>

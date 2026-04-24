@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hello</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        #warp-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4rem 2rem;
+        }
+
+        h1 {
+            font-size: 4rem;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin-bottom: 2rem;
+            color: #fff;
+            text-shadow:
+                0 0 10px #0ff,
+                0 0 20px #0ff,
+                0 0 40px #00aaff;
+        }
+
+        .search-wrapper {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 16px 30px;
+            font-size: 1.2rem;
+            background: rgba(0, 20, 30, 0.7);
+            border: 2px solid #0ff;
+            border-radius: 40px;
+            color: #fff;
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+
+        #searchInput::placeholder {
+            color: rgba(0, 255, 255, 0.5);
+        }
+
+        #searchInput:focus {
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8), inset 0 0 15px rgba(0, 255, 255, 0.3);
+            background: rgba(0, 30, 50, 0.9);
+        }
+
+        #gameGrid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2.5rem;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .game-card {
+            position: relative;
+            width: 280px;
+            padding: 30px 20px;
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(10, 10, 15, 0.9);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: conic-gradient(from 0deg, transparent 0%, transparent 60%, #0ff 80%, #f0f 100%);
+            border-radius: 18px;
+            z-index: -2;
+            animation: rotate-border 4s linear infinite;
+        }
+
+        .game-card::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: #0d0d12;
+            border-radius: 14px;
+            z-index: -1;
+        }
+
+        @keyframes rotate-border {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.05);
+        }
+
+        .game-card:hover::before {
+            background: conic-gradient(from 0deg, #0ff 0%, #f0f 50%, #0ff 100%);
+            filter: blur(4px);
+        }
+
+        .game-card h3 {
+            font-size: 1.6rem;
+            margin: 0 0 10px 0;
+            color: #fff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+
+        .game-card p {
+            color: #8892b0;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+
+        .play-btn {
+            display: inline-block;
+            padding: 10px 35px;
+            background: transparent;
+            border: 2px solid #f0f;
+            color: #f0f;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3), inset 0 0 5px rgba(255, 0, 255, 0.2);
+        }
+
+        .play-btn:hover {
+            background: #f0f;
+            color: #fff;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.8), 0 0 50px rgba(255, 0, 255, 0.5);
+            text-shadow: 0 0 5px #fff;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .empty-tip {
+            margin-top: 24px;
+            color: #8fa7c7;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="warp-canvas"></canvas>
+
+    <div class="container">
+        <h1>HELLO</h1>
+
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="Initialize search sequence..." />
+        </div>
+
+        <main id="gameGrid"></main>
+        <div id="emptyTip" class="empty-tip" style="display:none;">No matching games found.</div>
+    </div>
+
+    <script>
+        const games = [
+            {
+                title: "Minecraft",
+                desc: "Sandbox / Technical",
+                folder: "minecraft"
+            },
+            {
+                title: "Geometry Dash",
+                desc: "Rhythm / Action",
+                folder: "geometry-dash"
+            },
+            {
+                title: "Hollow Knight",
+                desc: "Metroidvania",
+                folder: "hollow-knight"
+            },
+            {
+                title: "Level Devil",
+                desc: "Trap Platformer",
+                folder: "level-devil"
+            }
+        ];
+
+        const gameGrid = document.getElementById("gameGrid");
+        const searchInput = document.getElementById("searchInput");
+        const emptyTip = document.getElementById("emptyTip");
+
+        function renderGames(list) {
+            gameGrid.innerHTML = "";
+
+            if (list.length === 0) {
+                emptyTip.style.display = "block";
+                return;
+            }
+
+            emptyTip.style.display = "none";
+
+            list.forEach(game => {
+                const card = document.createElement("div");
+                card.className = "game-card";
+                card.innerHTML = `
+                    <h3>${game.title}</h3>
+                    <p>${game.desc}</p>
+                    <a href="game.html?folder=${encodeURIComponent(game.folder)}" class="play-btn">Play</a>
+                `;
+                gameGrid.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener("input", (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            const filtered = games.filter(game =>
+                game.title.toLowerCase().includes(keyword) ||
+                game.desc.toLowerCase().includes(keyword)
+            );
+            renderGames(filtered);
+        });
+
+        renderGames(games);
+
+        const canvas = document.getElementById('warp-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let stars = [];
+        const numStars = 600;
+        const speed = 8;
+        const fov = 400;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Star {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = (Math.random() - 0.5) * 3000;
+                this.y = (Math.random() - 0.5) * 3000;
+                this.z = Math.random() * 2000;
+                this.pz = this.z;
+            }
+            update() {
+                this.z -= speed;
+                if (this.z < 1) {
+                    this.reset();
+                    this.z = 2000;
+                    this.pz = this.z;
+                }
+            }
+            draw() {
+                let sx = (this.x / this.z) * fov + width / 2;
+                let sy = (this.y / this.z) * fov + height / 2;
+                let px = (this.x / this.pz) * fov + width / 2;
+                let py = (this.y / this.pz) * fov + height / 2;
+                let depthRatio = 1 - (this.z / 2000);
+
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(sx, sy);
+                ctx.lineWidth = depthRatio * 3;
+                ctx.strokeStyle = `rgba(0, 255, 255, ${depthRatio})`;
+                ctx.stroke();
+
+                this.pz = this.z;
+            }
+        }
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push(new Star());
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, width, height);
+
+            stars.forEach(star => {
+                star.update();
+                star.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+    <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    </style>
+</html>
