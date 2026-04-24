@@ -1,71 +1,215 @@
-* {
-  box-sizing: border-box;
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HELLO</title>
+
+<style>
+/* ✅ 修复滚动问题关键 */
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto; /* ⭐关键 */
 }
 
-html {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+/* 星空背景 */
+#warp-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #111;
-  color: #fff;
-  font-family: Arial, sans-serif;
+/* 主体 */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px 120px; /* ⭐底部加空间 */
 }
 
-.topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 72px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 20px;
-  background: #1a1a1a;
-  border-bottom: 1px solid #333;
-  z-index: 10;
+/* 标题 */
+h1 {
+    font-size: 60px;
+    color: #0ff;
+    text-shadow: 0 0 20px #0ff;
 }
 
-.topbar h1 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1;
+/* 搜索框 */
+#searchInput {
+    margin: 40px 0;
+    width: 300px;
+    padding: 15px;
+    border-radius: 30px;
+    border: 2px solid #0ff;
+    background: rgba(0,0,0,0.6);
+    color: white;
 }
 
-.back-btn {
-  color: white;
-  text-decoration: none;
-  background: #4b6bff;
-  padding: 10px 14px;
-  border-radius: 8px;
-  line-height: 1;
-  flex: 0 0 auto;
+/* 游戏区域 */
+#gameGrid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    max-width: 1100px;
 }
 
-.frame-wrap {
-  position: fixed;
-  top: 72px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  background: #000;
+/* 卡片 */
+.game-card {
+    width: 260px;
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    background: rgba(10,10,20,0.9);
+    box-shadow: 0 0 20px rgba(0,255,255,0.3);
+    transition: 0.3s;
 }
 
-#frame {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  background: #000;
+.game-card:hover {
+    transform: translateY(-10px) scale(1.05);
 }
+
+/* 按钮 */
+.play-btn {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 25px;
+    border-radius: 25px;
+    border: 2px solid #f0f;
+    color: #f0f;
+    text-decoration: none;
+}
+
+.play-btn:hover {
+    background: #f0f;
+    color: white;
+}
+
+/* 空提示 */
+.empty {
+    margin-top: 30px;
+    color: #aaa;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="warp-canvas"></canvas>
+
+<div class="container">
+    <h1>HELLO</h1>
+
+    <input id="searchInput" placeholder="Search game...">
+
+    <div id="gameGrid"></div>
+    <div id="empty" class="empty" style="display:none;">No games found</div>
+</div>
+
+<script>
+/* 游戏数据 */
+const games = [
+    {title:"Minecraft", folder:"minecraft", desc:"Sandbox"},
+    {title:"Geometry Dash", folder:"geometry-dash", desc:"Rhythm"},
+    {title:"Hollow Knight", folder:"hollow-knight", desc:"Metroidvania"},
+    {title:"Level Devil", folder:"level-devil", desc:"Trap Platformer"}
+];
+
+const grid = document.getElementById("gameGrid");
+const search = document.getElementById("searchInput");
+const empty = document.getElementById("empty");
+
+/* 渲染 */
+function render(list){
+    grid.innerHTML = "";
+
+    if(list.length === 0){
+        empty.style.display = "block";
+        return;
+    }
+
+    empty.style.display = "none";
+
+    list.forEach(g=>{
+        const card = document.createElement("div");
+        card.className = "game-card";
+
+        card.innerHTML = `
+            <h3>${g.title}</h3>
+            <p>${g.desc}</p>
+            <a href="game.html?folder=${g.folder}" class="play-btn">PLAY</a>
+        `;
+
+        grid.appendChild(card);
+    });
+}
+
+render(games);
+
+/* 搜索 */
+search.addEventListener("input",()=>{
+    const v = search.value.toLowerCase();
+    const filtered = games.filter(g=>g.title.toLowerCase().includes(v));
+    render(filtered);
+});
+
+/* 星空动画 */
+const canvas = document.getElementById('warp-canvas');
+const ctx = canvas.getContext('2d');
+
+let w,h;
+let stars=[];
+
+function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+class Star{
+    constructor(){ this.reset(); }
+    reset(){
+        this.x = (Math.random()-0.5)*2000;
+        this.y = (Math.random()-0.5)*2000;
+        this.z = Math.random()*1000;
+    }
+    update(){
+        this.z -= 5;
+        if(this.z<=0) this.reset();
+    }
+    draw(){
+        let x = this.x/this.z*300 + w/2;
+        let y = this.y/this.z*300 + h/2;
+        ctx.fillStyle="#0ff";
+        ctx.fillRect(x,y,2,2);
+    }
+}
+
+for(let i=0;i<400;i++) stars.push(new Star());
+
+function loop(){
+    ctx.fillStyle="rgba(0,0,0,0.3)";
+    ctx.fillRect(0,0,w,h);
+
+    stars.forEach(s=>{
+        s.update();
+        s.draw();
+    });
+
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
